@@ -1,0 +1,21 @@
+{
+  "name": "opencode-persona-plugin",
+  "version": "1.0.0",
+  "description": "Switchable AI persona system for OpenCode",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "bun build src/index.ts --outfile dist/index.js --target bun --external @opencode-ai/plugin"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": "*"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "latest",
+    "typescript": "^5.0.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/megastruktur/opencode-persona-plugin"
+  }
+}
