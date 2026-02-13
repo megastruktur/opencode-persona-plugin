@@ -23,17 +23,7 @@ cd opencode-persona-plugin
 ./install.sh
 ```
 
-Then add the plugin to your OpenCode config at `~/.config/opencode/opencode.json`:
-
-```json
-{
-  "plugins": [
-    { "name": "opencode-personas", "path": "plugins/opencode-personas.ts" }
-  ]
-}
-```
-
-Restart OpenCode to load the plugin.
+The plugin is automatically loaded from `~/.config/opencode/plugins/`. Restart OpenCode to activate.
 
 ## Usage
 
@@ -87,7 +77,7 @@ To disable auto-update, don't use `./install.sh` — manually copy the files ins
 ./uninstall.sh
 ```
 
-This removes the plugin, command, and bundled personas while preserving your custom personas. Remember to remove the plugin entry from your `opencode.json` and restart OpenCode.
+This removes the plugin, command, and bundled personas while preserving your custom personas. Restart OpenCode to apply.
 
 ## License
 
