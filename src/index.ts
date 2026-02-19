@@ -76,7 +76,7 @@ async function checkForUpdates(client: any): Promise<void> {
     clearTimeout(fetchTimeout)
 
     // Check for changes
-    const diffProc = Bun.spawn(["git", "-C", SOURCE_REPO_DIR, "diff", "HEAD..origin/main", "--stat"])
+    const diffProc = Bun.spawn(["git", "-C", SOURCE_REPO_DIR, "diff", "HEAD..origin/master", "--stat"])
     const diffOutput = await new Response(diffProc.stdout).text()
     await diffProc.exited
 
