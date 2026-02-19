@@ -57,41 +57,34 @@ async function loadPersona(name: string): Promise<string | null> {
 
 async function checkForUpdates(client: any): Promise<void> {
   try {
-    // Check if source repo exists
-    const sourceExists = await stat(SOURCE_REPO_DIR)
-      .then(() => true)
-      .catch(() => false)
-    if (!sourceExists) return // Not installed via git clone, skip
-
-    // Check if it's a git repo
+    // Check if source repo is a git repo
     const gitExists = await stat(join(SOURCE_REPO_DIR, ".git"))
       .then(() => true)
       .catch(() => false)
     if (!gitExists) return
 
-    // Fetch with timeout
-    const fetchProc = Bun.spawn(["git", "-C", SOURCE_REPO_DIR, "fetch", "--quiet"])
-    const fetchTimeout = setTimeout(() => fetchProc.kill(), 5000)
-    await fetchProc.exited
-    clearTimeout(fetchTimeout)
+    // Record HEAD before pull
+    const headBeforeProc = Bun.spawn(["git", "-C", SOURCE_REPO_DIR, "rev-parse", "HEAD"])
+    const headBefore = (await new Response(headBeforeProc.stdout).text()).trim()
+    await headBeforeProc.exited
 
-    // Check for changes
-    const diffProc = Bun.spawn(["git", "-C", SOURCE_REPO_DIR, "diff", "HEAD..origin/master", "--stat"])
-    const diffOutput = await new Response(diffProc.stdout).text()
-    await diffProc.exited
+    // Pull updates (branch-agnostic: fetch + merge in one step)
+    const pullProc = Bun.spawn(["git", "-C", SOURCE_REPO_DIR, "pull", "--quiet"])
+    const pullTimeout = setTimeout(() => pullProc.kill(), 15000)
+    await pullProc.exited
+    clearTimeout(pullTimeout)
 
-    if (!diffOutput.trim()) {
+    // Check if HEAD changed
+    const headAfterProc = Bun.spawn(["git", "-C", SOURCE_REPO_DIR, "rev-parse", "HEAD"])
+    const headAfter = (await new Response(headAfterProc.stdout).text()).trim()
+    await headAfterProc.exited
+
+    if (headBefore === headAfter) {
       await client.app.log({
         body: { service: "opencode-personas", level: "debug", message: "No updates available" },
       })
       return
     }
-
-    // Pull updates
-    const pullProc = Bun.spawn(["git", "-C", SOURCE_REPO_DIR, "pull", "--quiet"])
-    const pullTimeout = setTimeout(() => pullProc.kill(), 10000)
-    await pullProc.exited
-    clearTimeout(pullTimeout)
 
     // Copy updated bundled personas
     for (const persona of BUNDLED_PERSONAS) {
@@ -112,11 +105,19 @@ async function checkForUpdates(client: any): Promise<void> {
       await copyFile(join(SOURCE_REPO_DIR, "commands", "persona.md"), join(COMMANDS_TARGET, "persona.md"))
     } catch {}
 
+    // Invalidate caches so current session uses updated personas immediately
+    personaCache.clear()
+    lastDiscoveryTime = 0
+    discoveredPersonas = await discoverPersonas()
+    if (currentPersona) {
+      await loadPersona(currentPersona)
+    }
+
     await client.app.log({
       body: {
         service: "opencode-personas",
         level: "info",
-        message: "Update applied. Restart OpenCode to use new version.",
+        message: `Update applied (${headBefore.slice(0, 7)}..${headAfter.slice(0, 7)}). Persona content refreshed.`,
       },
     })
   } catch (err) {
